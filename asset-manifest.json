@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/react-scrutineer/static/css/main.0e6bdde3.css",
+    "main.js": "/react-scrutineer/static/js/main.b8b3dfd2.js",
+    "static/js/453.010e4523.chunk.js": "/react-scrutineer/static/js/453.010e4523.chunk.js",
+    "index.html": "/react-scrutineer/index.html",
+    "main.0e6bdde3.css.map": "/react-scrutineer/static/css/main.0e6bdde3.css.map",
+    "main.b8b3dfd2.js.map": "/react-scrutineer/static/js/main.b8b3dfd2.js.map",
+    "453.010e4523.chunk.js.map": "/react-scrutineer/static/js/453.010e4523.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0e6bdde3.css",
+    "static/js/main.b8b3dfd2.js"
+  ]
+}
