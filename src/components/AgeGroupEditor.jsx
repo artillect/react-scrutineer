@@ -9,9 +9,9 @@ const AgeGroupEditor = ({ ageGroup, onChange, onDelete }) => {
   }, [ageGroup, onChange]);
 
   const generateAgeGroupName = useCallback((min, max) => {
-    if (!min && !max) return 'All Ages';
-    if (!min) return `${max} & Under`;
-    if (!max) return `${min} & Over`;
+    if ((min == '' || min == 0) && max == '') return 'All Ages';
+    if (min == '' || min == 0) return `${max} & Under`;
+    if (max == '') return `${min} & Over`;
     return `${min} & Under ${max}`;
   }, []);
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppContext } from '../contexts/AppContext';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,7 +7,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import DancerRegistrationForm from '../components/DancerRegistrationForm';
 
-const DancerManagement = ({ dancers, onRegister, onUpdate, onDelete }) => {
+const DancerManagement = () => {
+  const { dancers, setDancers } = useAppContext();
+
+  const handleRegister = (newDancer) => {
+    setDancers([...dancers, { ...newDancer, id: Date.now().toString() }]);
+  };
+
+  const handleUpdate = (updatedDancer) => {
+    setDancers(dancers.map(d => d.id === updatedDancer.id ? updatedDancer : d));
+  };
+
+  const handleDelete = (dancerId) => {
+    setDancers(dancers.filter(d => d.id !== dancerId));
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -19,7 +34,7 @@ const DancerManagement = ({ dancers, onRegister, onUpdate, onDelete }) => {
             <DialogHeader>
               <DialogTitle>Register New Dancer</DialogTitle>
             </DialogHeader>
-            <DancerRegistrationForm onRegister={onRegister} />
+            <DancerRegistrationForm onRegister={handleRegister} />
           </DialogContent>
         </Dialog>
       </div>
@@ -35,7 +50,7 @@ const DancerManagement = ({ dancers, onRegister, onUpdate, onDelete }) => {
         </TableHeader>
         <TableBody>
           {dancers.map((dancer) => (
-            <TableRow key={dancer.number}>
+            <TableRow key={dancer.id}>
               <TableCell>{dancer.number}</TableCell>
               <TableCell>{dancer.name}</TableCell>
               <TableCell className="capitalize">{dancer.category}</TableCell>
@@ -49,7 +64,7 @@ const DancerManagement = ({ dancers, onRegister, onUpdate, onDelete }) => {
                     <DialogHeader>
                       <DialogTitle>Edit Dancer</DialogTitle>
                     </DialogHeader>
-                    <DancerRegistrationForm initialData={dancer} onUpdate={onUpdate} />
+                    <DancerRegistrationForm initialData={dancer} onUpdate={handleUpdate} />
                   </DialogContent>
                 </Dialog>
                 <AlertDialog>
@@ -65,7 +80,7 @@ const DancerManagement = ({ dancers, onRegister, onUpdate, onDelete }) => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(dancer.number)}>Delete</AlertDialogAction>
+                      <AlertDialogAction onClick={() => handleDelete(dancer.id)}>Delete</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

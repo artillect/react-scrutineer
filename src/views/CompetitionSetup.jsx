@@ -1,21 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { PlusCircle, Pencil, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AgeGroupEditor from '../components/AgeGroupEditor';
 import DanceSelector from '../components/DanceSelector';
-import { INITIAL_AGE_GROUPS, INITIAL_DANCES, INITIAL_CHAMPIONSHIP_AGE_GROUPS, INITIAL_PREMIERSHIP } from '../utils/constants';
+import { useAppContext } from '../contexts/AppContext';
 
 const CompetitionSetup = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [ageGroups, setAgeGroups] = useState(INITIAL_AGE_GROUPS);
-  const [dances, setDances] = useState(INITIAL_DANCES);
-  const [hasChampionship, setHasChampionship] = useState(false);
-  const [hasPremiership, setHasPremiership] = useState(false);
-  const [championshipAgeGroups, setChampionshipAgeGroups] = useState(INITIAL_CHAMPIONSHIP_AGE_GROUPS);
-  const [championshipDances, setChampionshipDances] = useState(INITIAL_DANCES.championship);
-  const [premiership, setPremiership] = useState(INITIAL_PREMIERSHIP);
+  const {
+    isEditing, setIsEditing,
+    ageGroups, setAgeGroups,
+    dances, setDances,
+    hasChampionship, setHasChampionship,
+    hasPremiership, setHasPremiership,
+    championshipAgeGroups, setChampionshipAgeGroups,
+    championshipDances, setChampionshipDances,
+    premiership, setPremiership,
+    judges, setJudges
+  } = useAppContext();
 
   const handleAgeGroupChange = useCallback((category, action, index, updatedGroup) => {
     setAgeGroups(prev => {
@@ -33,7 +36,7 @@ const CompetitionSetup = () => {
       }
       return { ...prev, [category]: newGroups };
     });
-  }, []);
+  }, [setAgeGroups]);
 
   const handleChampionshipAgeGroupChange = useCallback((action, index, updatedGroup) => {
     setChampionshipAgeGroups(prev => {
@@ -48,11 +51,11 @@ const CompetitionSetup = () => {
           return prev;
       }
     });
-  }, []);
+  }, [setChampionshipAgeGroups]);
 
   const handleDanceChange = useCallback((category, newDances) => {
     setDances(prev => ({ ...prev, [category]: newDances }));
-  }, []);
+  }, [setDances]);
 
   const handlePremiershigeGroupChange = useCallback((action, index, updatedGroup) => {
     setPremiership(prev => {
@@ -70,7 +73,7 @@ const CompetitionSetup = () => {
       }
       return { ...prev, ageGroups: newAgeGroups };
     });
-  }, []);
+  }, [setPremiership]);
 
   const renderAgeGroups = useCallback((groups, onUpdate, onDelete) => (
     <div>
@@ -104,6 +107,45 @@ const CompetitionSetup = () => {
           </>
         )}
       </Button>
+      
+      {/* Judges */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-2">Judges</h3>
+        {isEditing ? (
+          <div>
+            {judges.map((judge, index) => (
+              <div key={index} className="flex items-center mb-2">
+                <input
+                  type="text"
+                  value={judge}
+                  onChange={(e) => {
+                    const newJudges = [...judges];
+                    newJudges[index] = e.target.value;
+                    setJudges(newJudges);
+                  }}
+                  className="border p-1 mr-2"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setJudges(judges.filter((_, i) => i !== index))}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setJudges([...judges, `Judge ${judges.length + 1}`])}
+            >
+              <PlusCircle size={16} className="mr-1" /> Add Judge
+            </Button>
+          </div>
+        ) : (
+          <p>{judges.join(', ')}</p>
+        )}
+      </div>
       
       {/* Regular Competition Setup */}
       <h3 className="text-lg font-semibold mt-6 mb-2">Regular Competition</h3>
