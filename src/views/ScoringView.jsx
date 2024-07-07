@@ -1,3 +1,4 @@
+// /src/views/ScoringView.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,22 +88,26 @@ const DanceScoreCard = ({ dance, dancers, judges, scores, onScoreChange }) => (
 );
 
 const ScoringView = () => {
-  const { categories, ageGroups, dances, dancers, judges, scores, setScores } = useAppContext();
+  const { categories, ageGroups, dances, dancers, judges, scores, setScores, competitions, currentCompetition } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('');
 
+  const currentCompetitionData = useMemo(() => 
+    competitions.find(comp => comp.id === currentCompetition),
+    [competitions, currentCompetition]
+  );
+
   useEffect(() => {
-    if (selectedCategory && ageGroups[selectedCategory].length > 0) {
-      setSelectedAgeGroup(ageGroups[selectedCategory][0].name);
-    } else {
-      setSelectedAgeGroup('');
+    if (currentCompetitionData && currentCompetitionData.categories.length > 0) {
+      setSelectedCategory(currentCompetitionData.categories[0]);
+      setSelectedAgeGroup(currentCompetitionData.categories[0][0]);
     }
-  }, [selectedCategory, ageGroups]);
+  }, [currentCompetitionData]);
 
   const filteredDancers = useMemo(() => {
-    if (!selectedCategory || !selectedAgeGroup) return [];
+    if (!selectedCategory || !selectedAgeGroup || !currentCompetitionData) return [];
     
-    const selectedAgeGroupData = ageGroups[selectedCategory].find(ag => ag.name === selectedAgeGroup);
+    const selectedAgeGroupData = currentCompetitionData.ageGroups[selectedCategory]?.find(ag => ag.name === selectedAgeGroup);
     if (!selectedAgeGroupData) return [];
 
     const minAge = parseInt(selectedAgeGroupData.minAge) || 0;
@@ -111,18 +116,22 @@ const ScoringView = () => {
     return dancers.filter(dancer => 
       dancer.category === selectedCategory &&
       parseInt(dancer.age) >= minAge &&
-      parseInt(dancer.age) <= maxAge
+      parseInt(dancer.age) <= maxAge &&
+      dancer.competitions?.includes(currentCompetition)
     );
-  }, [dancers, selectedCategory, selectedAgeGroup, ageGroups]);
+  }, [dancers, selectedCategory, selectedAgeGroup, currentCompetitionData, currentCompetition]);
 
   const handleScoreChange = (dancerId, danceId, judgeId, score) => {
     setScores(prevScores => ({
       ...prevScores,
-      [dancerId]: {
-        ...prevScores[dancerId],
-        [danceId]: {
-          ...prevScores[dancerId]?.[danceId],
-          [judgeId]: score
+      [currentCompetition]: {
+        ...prevScores[currentCompetition],
+        [dancerId]: {
+          ...prevScores[currentCompetition]?.[dancerId],
+          [danceId]: {
+            ...prevScores[currentCompetition]?.[dancerId]?.[danceId],
+            [judgeId]: score
+          }
         }
       }
     }));
@@ -133,27 +142,27 @@ const ScoringView = () => {
       <div className="flex">
         <div className="w-1/3 pr-4">
           <CategorySelector
-            categories={categories}
+            categories={currentCompetitionData?.categories || []}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
           />
-          {selectedCategory && (
+          {selectedCategory && currentCompetitionData?.ageGroups?.[selectedCategory] && (
             <AgeGroupSelector
-              ageGroups={ageGroups}
+              ageGroups={currentCompetitionData?.ageGroups || {}}
               selectedCategory={selectedCategory}
               selectedAgeGroup={selectedAgeGroup}
               setSelectedAgeGroup={setSelectedAgeGroup}
             />
           )}
         </div>
-        <div className="w-2/3">
-          {selectedCategory && selectedAgeGroup && dances[selectedCategory].map(dance => (
+        <div className="w-2/3 h-screen overflow-auto">
+          {selectedCategory && selectedAgeGroup && currentCompetitionData?.dances[selectedCategory]?.map(dance => (
             <DanceScoreCard
               key={dance}
               dance={dance}
               dancers={filteredDancers}
-              judges={judges}
-              scores={scores}
+              judges={currentCompetitionData.judges || []}
+              scores={scores[currentCompetition] || {}}
               onScoreChange={handleScoreChange}
             />
           ))}
@@ -163,18 +172,11 @@ const ScoringView = () => {
       {/* Debugging section */}
       <div className="mt-8 p-4 bg-gray-100 rounded">
         <h3 className="text-lg font-bold mb-2">Debugging Information</h3>
+        <p>Current Competition: {currentCompetitionData?.name || 'None selected'}</p>
         <p>Total dancers: {dancers.length}</p>
         <p>Selected category: {selectedCategory}</p>
         <p>Selected age group: {selectedAgeGroup}</p>
         <p>Filtered dancers: {filteredDancers.length}</p>
-        <h4 className="text-md font-bold mt-4 mb-2">All Dancers:</h4>
-        <ul>
-          {dancers.map(dancer => (
-            <li key={dancer.id}>
-              {dancer.name} - Category: {dancer.category}, Age: {dancer.age}
-            </li>
-          ))}
-        </ul>
         <h4 className="text-md font-bold mt-4 mb-2">Filtered Dancers:</h4>
         <ul>
           {filteredDancers.map(dancer => (

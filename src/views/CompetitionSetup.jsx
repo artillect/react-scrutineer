@@ -1,92 +1,97 @@
-import React, { useCallback } from 'react';
-import { PlusCircle, Pencil, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Pencil, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import AgeGroupEditor from '../components/AgeGroupEditor';
 import DanceSelector from '../components/DanceSelector';
 import { useAppContext } from '../contexts/AppContext';
 
+const COMPETITION_TYPES = {
+  REGULAR: 'Regular',
+  CHAMPIONSHIP: 'Championship',
+  PREMIERSHIP: 'Premiership',
+  PRE_CHAMPIONSHIP: 'Pre-Championship',
+  CHOREOGRAPHY: 'Choreography',
+  MASTER_CLASS: 'Master Class'
+};
+
+const ALL_CATEGORIES = ['primary', 'beginner', 'novice', 'intermediate', 'premier'];
+
 const CompetitionSetup = () => {
-  const {
-    isEditing, setIsEditing,
-    ageGroups, setAgeGroups,
-    dances, setDances,
-    hasChampionship, setHasChampionship,
-    hasPremiership, setHasPremiership,
-    championshipAgeGroups, setChampionshipAgeGroups,
-    championshipDances, setChampionshipDances,
-    premiership, setPremiership,
-    judges, setJudges
-  } = useAppContext();
+  const { competitions, setCompetitions, currentCompetition } = useAppContext();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingJudgeIndex, setEditingJudgeIndex] = useState(null);
 
-  const handleAgeGroupChange = useCallback((category, action, index, updatedGroup) => {
-    setAgeGroups(prev => {
-      const newGroups = [...prev[category]];
-      switch (action) {
-        case 'add':
-          newGroups.push({ name: 'New Age Group', minAge: '', maxAge: '' });
-          break;
-        case 'update':
-          newGroups[index] = updatedGroup;
-          break;
-        case 'delete':
-          newGroups.splice(index, 1);
-          break;
-      }
-      return { ...prev, [category]: newGroups };
-    });
-  }, [setAgeGroups]);
+  const currentCompetitionData = competitions.find(comp => comp.id === currentCompetition);
 
-  const handleChampionshipAgeGroupChange = useCallback((action, index, updatedGroup) => {
-    setChampionshipAgeGroups(prev => {
-      switch (action) {
-        case 'add':
-          return [...prev, { name: 'New Age Group', minAge: '', maxAge: '' }];
-        case 'update':
-          return prev.map((group, i) => i === index ? updatedGroup : group);
-        case 'delete':
-          return prev.filter((_, i) => i !== index);
-        default:
-          return prev;
-      }
-    });
-  }, [setChampionshipAgeGroups]);
+  const handleUpdateCompetition = (updates) => {
+    setCompetitions(competitions.map(comp => 
+      comp.id === currentCompetition ? { ...comp, ...updates } : comp
+    ));
+  };
 
-  const handleDanceChange = useCallback((category, newDances) => {
-    setDances(prev => ({ ...prev, [category]: newDances }));
-  }, [setDances]);
+  useEffect(() => {
+    if (currentCompetitionData && !currentCompetitionData.judges) {
+      handleUpdateCompetition({ judges: ['Judge Name'] });
+    }
+  }, [currentCompetitionData, handleUpdateCompetition]);
 
-  const handlePremiershigeGroupChange = useCallback((action, index, updatedGroup) => {
-    setPremiership(prev => {
-      const newAgeGroups = [...prev.ageGroups];
-      switch (action) {
-        case 'add':
-          newAgeGroups.push({ name: 'New Age Group', minAge: '', maxAge: '' });
-          break;
-        case 'update':
-          newAgeGroups[index] = updatedGroup;
-          break;
-        case 'delete':
-          newAgeGroups.splice(index, 1);
-          break;
-      }
-      return { ...prev, ageGroups: newAgeGroups };
-    });
-  }, [setPremiership]);
 
-  const renderAgeGroups = useCallback((groups, onUpdate, onDelete) => (
-    <div>
-      {groups.map((group, index) => (
-        <AgeGroupEditor
-          key={index}
-          ageGroup={group}
-          onChange={(updatedGroup) => onUpdate(index, updatedGroup)}
-          onDelete={() => onDelete(index)}
-        />
-      ))}
-    </div>
-  ), []);
+  const handleCategoryToggle = (category) => {
+    const updatedCategories = currentCompetitionData.categories.includes(category)
+      ? currentCompetitionData.categories.filter(c => c !== category)
+      : [...currentCompetitionData.categories, category];
+    handleUpdateCompetition({ categories: updatedCategories });
+  };
+
+  const handleAgeGroupChange = (category, action, index, updatedGroup) => {
+    const newAgeGroups = { ...currentCompetitionData.ageGroups };
+    const groupsForCategory = newAgeGroups[category] || [];
+
+    switch (action) {
+      case 'add':
+        groupsForCategory.push({ name: 'New Age Group', minAge: '', maxAge: '' });
+        break;
+      case 'update':
+        groupsForCategory[index] = updatedGroup;
+        break;
+      case 'delete':
+        groupsForCategory.splice(index, 1);
+        break;
+    }
+
+    newAgeGroups[category] = groupsForCategory;
+    handleUpdateCompetition({ ageGroups: newAgeGroups });
+  };
+
+  const handleDanceChange = (category, newDances) => {
+    const newDancesObj = { ...currentCompetitionData.dances, [category]: newDances };
+    handleUpdateCompetition({ dances: newDancesObj });
+  };
+
+  const handleAddJudge = () => {
+    const newJudges = [...currentCompetitionData.judges, `Judge ${currentCompetitionData.judges.length + 1}`];
+    handleUpdateCompetition({ judges: newJudges });
+  };
+
+  const handleRemoveJudge = (index) => {
+    const newJudges = currentCompetitionData.judges.filter((_, i) => i !== index);
+    handleUpdateCompetition({ judges: newJudges });
+  };
+
+  const handleEditJudge = (index, newName) => {
+    const newJudges = [...currentCompetitionData.judges];
+    newJudges[index] = newName;
+    handleUpdateCompetition({ judges: newJudges });
+    setEditingJudgeIndex(null);
+  };
+
+  if (!currentCompetitionData) {
+    return <div>No competition selected</div>;
+  }
 
   return (
     <div>
@@ -107,179 +112,157 @@ const CompetitionSetup = () => {
           </>
         )}
       </Button>
-      
-      {/* Judges */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-2">Judges</h3>
-        {isEditing ? (
-          <div>
-            {judges.map((judge, index) => (
-              <div key={index} className="flex items-center mb-2">
-                <input
-                  type="text"
-                  value={judge}
-                  onChange={(e) => {
-                    const newJudges = [...judges];
-                    newJudges[index] = e.target.value;
-                    setJudges(newJudges);
-                  }}
-                  className="border p-1 mr-2"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setJudges(judges.filter((_, i) => i !== index))}
-                >
-                  Remove
-                </Button>
-              </div>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>{currentCompetitionData.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isEditing ? (
+            <>
+              <Input
+                value={currentCompetitionData.name}
+                onChange={(e) => handleUpdateCompetition({ name: e.target.value })}
+                className="mb-2"
+              />
+              <Select
+                value={currentCompetitionData.type}
+                onValueChange={(value) => handleUpdateCompetition({ type: value })}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select competition type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(COMPETITION_TYPES).map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            <>
+              <p>Type: {currentCompetitionData.type}</p>
+            </>
+          )}
+
+          <h3 className="text-lg font-semibold mt-4 mb-2">Categories</h3>
+          <div className="flex flex-wrap gap-2">
+            {ALL_CATEGORIES.map(category => (
+              <Button
+                key={category}
+                variant={currentCompetitionData.categories.includes(category) ? "default" : "outline"}
+                onClick={() => isEditing && handleCategoryToggle(category)}
+                className="capitalize"
+              >
+                {category}
+              </Button>
             ))}
+          </div>
+
+          <h3 className="text-lg font-semibold mt-4 mb-2">Judges</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Judge Name</TableHead>
+                {isEditing && <TableHead>Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentCompetitionData.judges.map((judge, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    {editingJudgeIndex === index ? (
+                      <Input
+                        value={judge}
+                        onChange={(e) => handleEditJudge(index, e.target.value)}
+                        onBlur={() => setEditingJudgeIndex(null)}
+                        autoFocus
+                      />
+                    ) : (
+                      judge
+                    )}
+                  </TableCell>
+                  {isEditing && (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingJudgeIndex(index)}
+                      >
+                        <Pencil size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveJudge(index)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {isEditing && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setJudges([...judges, `Judge ${judges.length + 1}`])}
+              onClick={handleAddJudge}
+              className="mt-2"
             >
               <PlusCircle size={16} className="mr-1" /> Add Judge
             </Button>
-          </div>
-        ) : (
-          <p>{judges.join(', ')}</p>
-        )}
-      </div>
-      
-      {/* Regular Competition Setup */}
-      <h3 className="text-lg font-semibold mt-6 mb-2">Regular Competition</h3>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead>Age Groups</TableHead>
-            <TableHead>Dances</TableHead>
-            {isEditing && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Object.entries(ageGroups).map(([category, groups]) => (
-            <TableRow key={category}>
-              <TableCell className="capitalize">{category}</TableCell>
-              <TableCell>
-                {isEditing ? (
-                  <>
-                    {renderAgeGroups(
-                      groups,
-                      (index, updatedGroup) => handleAgeGroupChange(category, 'update', index, updatedGroup),
-                      (index) => handleAgeGroupChange(category, 'delete', index)
+          )}
+
+          <Table className="mt-4">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead>Age Groups</TableHead>
+                <TableHead>Dances</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentCompetitionData.categories.map(category => (
+                <TableRow key={category}>
+                  <TableCell className="capitalize">{category}</TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <>
+                        {(currentCompetitionData.ageGroups[category] || []).map((group, index) => (
+                          <AgeGroupEditor
+                            key={index}
+                            ageGroup={group}
+                            onChange={(updatedGroup) => handleAgeGroupChange(category, 'update', index, updatedGroup)}
+                            onDelete={() => handleAgeGroupChange(category, 'delete', index)}
+                          />
+                        ))}
+                        <Button variant="outline" size="sm" onClick={() => handleAgeGroupChange(category, 'add')}>
+                          <PlusCircle size={16} className="mr-1" /> Add Age Group
+                        </Button>
+                      </>
+                    ) : (
+                      (currentCompetitionData.ageGroups[category] || []).map(group => group.name).join(', ')
                     )}
-                    <Button variant="outline" size="sm" onClick={() => handleAgeGroupChange(category, 'add')}>
-                      <PlusCircle size={16} className="mr-1" /> Add Age Group
-                    </Button>
-                  </>
-                ) : (
-                  groups.map(group => group.name).join(', ')
-                )}
-              </TableCell>
-              <TableCell>
-                {isEditing ? (
-                  <DanceSelector
-                    category={category === 'beginner' || category === 'novice' ? 'beginnerNovice' : category}
-                    selectedDances={dances[category]}
-                    onChange={(newDances) => handleDanceChange(category, newDances)}
-                  />
-                ) : (
-                  dances[category].join(', ')
-                )}
-              </TableCell>
-              {isEditing && (
-                <TableCell>
-                  {/* Add any additional actions here if needed */}
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      
-      {/* Championship Setup */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-2">Championship Setup</h3>
-        <label className="flex items-center mb-4">
-          <Checkbox
-            checked={hasChampionship}
-            onCheckedChange={setHasChampionship}
-          />
-          <span className="ml-2">Include Championship</span>
-        </label>
-        {hasChampionship && (
-          <div>
-            <h4 className="text-md font-semibold mb-2">Championship Age Groups</h4>
-            {isEditing ? (
-              <>
-                {renderAgeGroups(
-                  championshipAgeGroups,
-                  (index, updatedGroup) => handleChampionshipAgeGroupChange('update', index, updatedGroup),
-                  (index) => handleChampionshipAgeGroupChange('delete', index)
-                )}
-                <Button variant="outline" size="sm" onClick={() => handleChampionshipAgeGroupChange('add')}>
-                  <PlusCircle size={16} className="mr-1" /> Add Championship Age Group
-                </Button>
-              </>
-            ) : (
-              <p>{championshipAgeGroups.map(group => group.name).join(', ')}</p>
-            )}
-            <h4 className="text-md font-semibold mt-4 mb-2">Championship Dances</h4>
-            {isEditing ? (
-              <DanceSelector
-                category="championship"
-                selectedDances={championshipDances}
-                onChange={setChampionshipDances}
-              />
-            ) : (
-              <p>{championshipDances.join(', ')}</p>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Premiership Setup */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-2">Premiership Setup</h3>
-        <label className="flex items-center mb-4">
-          <Checkbox
-            checked={hasPremiership}
-            onCheckedChange={setHasPremiership}
-          />
-          <span className="ml-2">Include Premiership</span>
-        </label>
-        {hasPremiership && (
-          <div>
-            <h4 className="text-md font-semibold mb-2">Premiership Age Groups</h4>
-            {isEditing ? (
-              <>
-                {renderAgeGroups(
-                  premiership.ageGroups,
-                  (index, updatedGroup) => handlePremiershigeGroupChange('update', index, updatedGroup),
-                  (index) => handlePremiershigeGroupChange('delete', index)
-                )}
-                <Button variant="outline" size="sm" onClick={() => handlePremiershigeGroupChange('add')}>
-                  <PlusCircle size={16} className="mr-1" /> Add Premiership Age Group
-                </Button>
-              </>
-            ) : (
-              <p>{premiership.ageGroups.map(group => group.name).join(', ')}</p>
-            )}
-            <h4 className="text-md font-semibold mt-4 mb-2">Premiership Dances</h4>
-            {isEditing ? (
-              <DanceSelector
-                category="premiership"
-                selectedDances={premiership.dances}
-                onChange={(newDances) => setPremiership(prev => ({ ...prev, dances: newDances }))}
-              />
-            ) : (
-              <p>{premiership.dances.join(', ')}</p>
-            )}
-          </div>
-        )}
-      </div>
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <DanceSelector
+                        category={category}
+                        selectedDances={currentCompetitionData.dances[category] || []}
+                        onChange={(newDances) => handleDanceChange(category, newDances)}
+                      />
+                    ) : (
+                      (currentCompetitionData.dances[category] || []).join(', ')
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };

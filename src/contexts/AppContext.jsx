@@ -1,15 +1,17 @@
+// /src/contexts/AppContext.jsx
 import React, { createContext, useState, useContext } from 'react';
-import { INITIAL_AGE_GROUPS, INITIAL_DANCES, INITIAL_CHAMPIONSHIP_AGE_GROUPS, INITIAL_PREMIERSHIP, SAMPLE_DANCERS } from '../utils/constants';
+import { INITIAL_AGE_GROUPS, INITIAL_DANCES, INITIAL_CHAMPIONSHIP_AGE_GROUPS, INITIAL_PREMIERSHIP, SAMPLE_DANCERS, INITIAL_COMPETITION } from '../utils/constants';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-//   const [dancers, setDancers] = useState([]);
-  const [dancers, setDancers] = useState(SAMPLE_DANCERS);
+  const [dancers, setDancers] = useState(SAMPLE_DANCERS.map(dancer => ({
+    ...dancer,
+    competitions: ['comp_001']
+  })));
   const [categories, setCategories] = useState(Object.keys(INITIAL_AGE_GROUPS));
   const [ageGroups, setAgeGroups] = useState(INITIAL_AGE_GROUPS);
   const [dances, setDances] = useState(INITIAL_DANCES);
-  const [judges, setJudges] = useState(['Judge 1', 'Judge 2', 'Judge 3']);
   const [isEditing, setIsEditing] = useState(false);
   const [hasChampionship, setHasChampionship] = useState(false);
   const [hasPremiership, setHasPremiership] = useState(false);
@@ -17,8 +19,13 @@ export const AppProvider = ({ children }) => {
   const [championshipDances, setChampionshipDances] = useState(INITIAL_DANCES.championship);
   const [premiership, setPremiership] = useState(INITIAL_PREMIERSHIP);
   const [scores, setScores] = useState({});
+  const [competitions, setCompetitions] = useState([INITIAL_COMPETITION]);
+  const [judges, setJudges] = useState(INITIAL_COMPETITION.judges);
+  const [currentCompetition, setCurrentCompetition] = useState(INITIAL_COMPETITION.id);
 
   const value = {
+    competitions, setCompetitions,
+    currentCompetition, setCurrentCompetition,
     dancers, setDancers,
     categories, setCategories,
     ageGroups, setAgeGroups,
